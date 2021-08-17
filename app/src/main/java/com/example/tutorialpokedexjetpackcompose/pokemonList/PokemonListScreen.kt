@@ -10,10 +10,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -28,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
+import coil.request.CachePolicy
 import com.example.tutorialpokedexjetpackcompose.R
 import com.example.tutorialpokedexjetpackcompose.data.models.PokedexListEntry
 import com.example.tutorialpokedexjetpackcompose.ui.theme.RobotoCondensed
@@ -168,7 +171,10 @@ fun PokedexEntry(
 ) {
     val defaultDominantColor = MaterialTheme.colors.surface
     var dominantColor by remember {
-        mutableStateOf(Color.Blue)
+        mutableStateOf(Color.DarkGray)
+    }
+    var isLoadingImage by remember {
+        mutableStateOf(true)
     }
 
     Box(
@@ -192,27 +198,46 @@ fun PokedexEntry(
             }
     ) {
         Column {
-            Image(
-                painter = rememberImagePainter(
-                    data = entry.imageUrl,
+            Box(
+                modifier = Modifier.align(CenterHorizontally)
+            ) {
+                Image(
+                    painter = rememberImagePainter(
+                        data = entry.imageUrl,
 //                        .target {
 //                            viewModel.calcDominantColor(it) { color ->
 //                                dominantColor = color
 //                            }
 //                        }
-                    onExecute = { _, _ ->
-                        true
-                    },
-                    builder = {
-                        placeholder(R.mipmap.ic_launcher)
-                        crossfade(true)
-                    }
-                ),
-                contentDescription = entry.pokemonName,
-                modifier = Modifier
-                    .size(120.dp)
-                    .align(CenterHorizontally)
-            )
+                        onExecute = { _, _ ->
+                            true
+                        },
+                        builder = {
+                            diskCachePolicy(CachePolicy.DISABLED)
+                            crossfade(true)
+                            listener(
+                                onSuccess = { _, _ ->
+                                    isLoadingImage = false
+                                },
+                                onError = { _, _ ->
+                                    isLoadingImage = false
+                                }
+                            )
+                        }
+                    ),
+                    contentDescription = entry.pokemonName,
+                    modifier = Modifier.size(120.dp)
+                )
+                if (isLoadingImage) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier
+                            .scale(0.5F)
+                            .size(120.dp)
+                    )
+                }
+            }
+
 //            CoilImage(
 //                request = ImageRequest.Builder(LocalContext.current)
 //                    .data(entry.imageUrl)
